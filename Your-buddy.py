@@ -8,6 +8,7 @@ import webbrowser
 import os
 import requests
 import pyautogui
+import time
 
 # Initialize voice engine
 engine = pyttsx3.init()
@@ -15,7 +16,7 @@ voices = engine.getProperty('voices')
 engine.setProperty('voice', voices[1].id)  # 0 = male, 1 = female
 
 def speak(text):
-    
+    print(f"Your Buddy: {text}")
     engine.say(text)
     engine.runAndWait()
 
@@ -27,27 +28,40 @@ def greet():
         speak("Good afternoon!")
     else:
         speak("Good evening!")
-    speak("I am Your Buddy. How can I help you today?")
+    time.sleep(0.5)
+    speak("I am Your Buddy.")
+    time.sleep(0.5)
+    speak("How can I help you today?")
 
-def take_command():
+def take_command(retry_limit=3):
     recognizer = sr.Recognizer()
     with sr.Microphone() as source:
         print("Listening...")
         recognizer.pause_threshold = 1
+        recognizer.adjust_for_ambient_noise(source, duration=1)
+        time.sleep(0.5)
         audio = recognizer.listen(source)
 
-    try:
-        print("Recognizing...")
-        query = recognizer.recognize_google(audio, language='en-in')
-        print(f"You said: {query}")
-    except Exception:
-        speak("Say that again please...")
-        return "None"
-    return query.lower()
+    for attempt in range(retry_limit):
+        try:
+            print("Recognizing...")
+            query = recognizer.recognize_google(audio, language='en-in')
+            print(f"You said: {query}")
+            return query.lower()
+        except sr.UnknownValueError:
+            if attempt < retry_limit - 1:
+                speak("Sorry, I didn't catch that. Could you say it again?")
+                return take_command()
+            else:
+                speak("Sorry, I couldn't understand.")
+                return "None"
+        except Exception as e:
+            speak("Something went wrong.")
+            return "None"
 
-def get_weather(Chandigarh):
-    api_key = "1234567890abcdef1234567890abcdef"  # Replace this with your OpenWeatherMap API key
-    url = f"https://api.openweathermap.org/data/2.5/weather?q=Chandigarh&appid=YOUR_API_KEY&units=metric"
+def get_weather(city):
+    api_key = "your_openweather_api_key"  # replace with your actual API key
+    url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
     try:
         response = requests.get(url).json()
         if response["cod"] == 200:
@@ -65,20 +79,23 @@ def run_your_buddy():
         query = take_command()
 
         if 'wikipedia' in query:
+            speak("What should I search on Wikipedia?")
+            topic = take_command()
             speak("Searching Wikipedia...")
-            query = query.replace("wikipedia", "")
-            result = wikipedia.summary(query, sentences=2)
+            result = wikipedia.summary(topic, sentences=2)
             print(result)
             speak(result)
 
-        elif 'play' in query:
-            song = query.replace('play', '')
-            speak(f"Playing {song} on YouTube")
-            pywhatkit.playonyt(song)
+        elif 'play' in query and 'youtube' in query:
+            speak("Which song do you want me to play?")
+            song = take_command()
+            if song != "None":
+                speak(f"Playing {song} on YouTube")
+                pywhatkit.playonyt(song)
 
         elif 'time' in query:
-            time = datetime.datetime.now().strftime('%I:%M %p')
-            speak(f"The time is {time}")
+            time_now = datetime.datetime.now().strftime('%I:%M %p')
+            speak(f"The time is {time_now}")
 
         elif 'date' in query:
             today = datetime.date.today()
@@ -109,9 +126,10 @@ def run_your_buddy():
             speak(joke)
 
         elif 'weather' in query:
-            speak("Which city's weather do you want?")
+            speak("Which city's weather would you like to know?")
             city = take_command()
-            get_weather("Chandigarh")
+            if city != "None":
+                get_weather(city)
 
         elif 'send whatsapp' in query:
             speak("Tell me the phone number including country code")
@@ -144,7 +162,7 @@ def run_your_buddy():
             data = take_command()
             with open("data.txt", "w") as f:
                 f.write(data)
-            speak("I will remember that.")
+            speak("Got it. I’ll remember that.")
 
         elif 'what do you remember' in query:
             try:
