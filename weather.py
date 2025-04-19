@@ -2,7 +2,7 @@ import requests
 from speak_engine import speak
 
 def get_weather(city_name="Chandigarh"):
-    api_key = "6238cfb0f69e9ecd5b448b0ef6f7fcb9"  # Replace with your actual API key
+    api_key = ""  # Replace with your actual API key
     lat = 30.7333
     lon = 76.7794
     url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
