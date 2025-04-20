@@ -9,6 +9,7 @@ import computer_tasks
 import browser_tasks
 import weather
 import memory
+import openai_tasks  # ✅ added OpenAI import
 
 def greet():
     hour = datetime.datetime.now().hour
@@ -18,15 +19,18 @@ def greet():
         speak("Good afternoon!")
     else:
         speak("Good evening!")
-    time.sleep(0.5)
+    time.sleep(0.2)
     speak("I am Your Buddy.")
-    time.sleep(0.5)
+    time.sleep(0.2)
     speak("How can I help you today?")
 
 def run_your_buddy():
     greet()
     while True:
         query = take_command()
+
+        if query == "None":
+            continue
 
         if 'wikipedia' in query:
             speak("What should I search on Wikipedia?")
@@ -99,6 +103,14 @@ def run_your_buddy():
         elif 'what do you remember' in query:
             memory.recall()
 
+        elif 'ask ai' in query or 'talk to ai' in query:
+            speak("What would you like to ask?")
+            prompt = take_command()
+            if prompt and prompt != "None":
+                speak("Thinking...")
+                response = openai_tasks.talk_to_openai(prompt)
+
+                
         elif 'stop' in query or 'exit' in query or 'quit' in query:
             speak("Goodbye! Have a great day.")
             break
@@ -107,5 +119,4 @@ def run_your_buddy():
             speak("Sorry, I didn't understand that.")
 
 if __name__ == "__main__":
-  run_your_buddy()
-
+    run_your_buddy()
